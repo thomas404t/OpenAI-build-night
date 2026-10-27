@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Champaign Eats</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&family=IBM+Plex+Mono:wght@500&family=Public+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* Idea: Green Street is the city line, so the page reads like a street-sign guide: flat ruled rows on the left, a schematic city map pinned on the right. */
+:root {
+  --bg: #f1f2ee;
+  --surface: #e6e8e1;
+  --fg: #14213a;
+  --muted: #52607a;
+  --line: #cdd1c8;
+  --street: #bcc2b8;
+  --accent: #bf3f0e;
+  --accent-ink: #ffffff;
+  --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1626; --surface: #152036; --fg: #e9edf3; --muted: #9eabc0; --line: #27344b;
+    --street: #2c3b55; --accent: #ff8f63; --accent-ink: #1a0c05; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1626; --surface: #152036; --fg: #e9edf3; --muted: #9eabc0; --line: #27344b;
+  --street: #2c3b55; --accent: #ff8f63; --accent-ink: #1a0c05; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  font: 16px/1.55 var(--font-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 56px;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); background: var(--bg); z-index: 10; }
+.wrap { max-width: 1080px; margin: 0 auto; }
+a { color: inherit; }
+button, summary, a { cursor: pointer; }
+button:focus-visible, a:focus-visible, summary:focus-visible, .pin:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+header { padding-block: 48px 28px; max-width: 46rem; }
+.kicker { font: 500 12px var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 14px; }
+h1 {
+  font: 900 clamp(2.6rem, 9vw, 5rem)/.95 var(--font-display); font-stretch: 112%;
+  letter-spacing: -.02em; margin: 0 0 18px; text-transform: uppercase; text-wrap: balance;
+}
+.lede { margin: 0; color: var(--muted); max-width: 54ch; font-size: 1.05rem; }
+
+nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); display: flex; gap: 28px; overflow-x: auto; }
+nav button {
+  font: 700 15px var(--font-body); color: var(--muted); background: none; border: 0;
+  border-bottom: 3px solid transparent; padding: 14px 0 11px; white-space: nowrap;
+}
+nav button:hover { color: var(--fg); }
+nav button[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
+
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 380px); gap: 48px; align-items: start; padding-top: 28px; }
+.mapcol { position: sticky; top: 72px; order: 2; }
+.listcol { order: 1; min-width: 0; }
+.intro h2 { font: 800 1.7rem/1.1 var(--font-display); font-stretch: 105%; margin: 0 0 6px; text-wrap: balance; }
+.intro p { margin: 0 0 8px; color: var(--muted); max-width: 56ch; }
+
+ol { list-style: none; margin: 0; padding: 0; }
+.row { display: grid; grid-template-columns: 3.4rem minmax(0, 1fr); gap: 0 12px; padding: 22px 8px 22px 0; border-top: 1px solid var(--line); scroll-margin-top: 80px; }
+.row.on { background: var(--surface); margin-inline: -12px; padding-inline: 12px 20px; }
+.rank { font: 500 1.6rem/1.15 var(--font-mono); color: var(--accent); font-variant-numeric: tabular-nums; }
+.name { font: 800 1.35rem/1.15 var(--font-display); font-stretch: 105%; margin: 0 0 4px; }
+.facts { margin: 0 0 8px; font-size: 14px; color: var(--muted); }
+.facts .price { font-family: var(--font-mono); color: var(--fg); }
+.desc { margin: 0 0 10px; max-width: 58ch; }
+.tools { display: flex; flex-wrap: wrap; gap: 6px 22px; align-items: baseline; }
+.get summary { list-style: none; font-weight: 700; font-size: 14.5px; display: inline-flex; gap: 8px; align-items: center; }
+.get summary::-webkit-details-marker { display: none; }
+.get summary::after { content: ""; width: 7px; height: 7px; border-right: 2px solid var(--accent); border-bottom: 2px solid var(--accent); transform: rotate(45deg) translateY(-2px); }
+.get[open] summary::after { transform: rotate(225deg); }
+.get ul { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 10px; }
+.get li { display: grid; gap: 1px; font-size: 14.5px; }
+.get li span { color: var(--muted); }
+.maps { font-weight: 700; font-size: 14.5px; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; text-decoration-color: var(--accent); }
+.tools .get { flex-basis: 100%; order: 3; }
+
+.mapbox { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+.mapbox svg { display: block; width: 100%; height: auto; }
+.mapnote { margin: 8px 0 0; font-size: 12.5px; color: var(--muted); }
+.zone { font: 700 10px var(--font-mono); letter-spacing: .1em; fill: var(--muted); text-transform: uppercase; }
+.street { stroke: var(--street); stroke-width: 1; }
+.green { stroke: var(--fg); stroke-width: 6; }
+.band { fill: none; stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 3 3; }
+.campus { fill: var(--bg); stroke: var(--line); }
+.pin { cursor: pointer; }
+.pin circle { fill: var(--accent); stroke: var(--bg); stroke-width: 2; }
+.pin text { fill: var(--accent-ink); font: 500 11px var(--font-mono); text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.pin.on circle { stroke: var(--fg); stroke-width: 3; }
+
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: center; padding-top: 20px; }
+.controls input[type="search"] {
+  flex: 1 1 220px; min-width: 0; min-height: 42px; padding: 0 14px; font: 400 15px var(--font-body);
+  color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 6px;
+}
+.controls input::placeholder { color: var(--muted); }
+.seg { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg button, .chip {
+  min-height: 42px; padding: 0 14px; font: 700 14px var(--font-body); color: var(--muted);
+  background: transparent; border: 0;
+}
+.chip { border: 1px solid var(--line); border-radius: 6px; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"], .chip[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+.seg button:hover, .chip:hover { color: var(--fg); }
+.seg button[aria-pressed="true"]:hover, .chip[aria-pressed="true"]:hover { color: var(--bg); }
+.surprise { min-height: 42px; padding: 0 18px; font: 800 14px var(--font-display); letter-spacing: .04em; text-transform: uppercase; background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 6px; }
+.count { font: 500 12px var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.save { display: inline-flex; gap: 6px; align-items: center; font: 700 14.5px var(--font-body); color: var(--fg); background: none; border: 0; padding: 0; }
+.save svg { width: 16px; height: 16px; fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; }
+.save[aria-pressed="true"] svg { fill: var(--accent); }
+.empty { padding: 28px 0; color: var(--muted); }
+.empty button { font: inherit; font-weight: 700; color: var(--fg); background: none; border: 0; padding: 0; text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 2px; }
+footer { margin-top: 48px; border-top: 1px solid var(--line); padding-top: 20px; color: var(--muted); font-size: 13.5px; max-width: 46rem; }
+footer a { color: var(--fg); }
+.made { margin: 16px 0 0; font: 500 12px var(--font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--fg); }
+
+@media (max-width: 860px) {
+  .layout { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .mapcol { position: static; order: 1; }
+  .listcol { order: 2; }
+  .row.on { margin-inline: 0; padding-inline: 8px; }
+}
+@media (max-width: 480px) { .row { grid-template-columns: 2.6rem minmax(0, 1fr); } nav { gap: 20px; } }
+@media (prefers-reduced-motion: no-preference) {
+  .pin circle { transition: r .15s ease; }
+  .pin.on circle { r: 13; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="kicker">Champaign–Urbana · Green St is the city line</p>
+    <h1>Champaign Eats</h1>
+    <p class="lede">Champaign is south of Green Street and Urbana is north. Three ranked lists for U of I students: what tastes best, what stretches a budget, and what locals keep going back to.</p>
+  </header>
+
+  <nav role="tablist" aria-label="Lists">
+    <button role="tab" id="tab-taste" data-tab="taste" aria-selected="true" aria-controls="panel">Best tasting</button>
+    <button role="tab" id="tab-value" data-tab="value" aria-selected="false" aria-controls="panel">Most value</button>
+    <button role="tab" id="tab-local" data-tab="local" aria-selected="false" aria-controls="panel">Local favorites</button>
+  </nav>
+
+  <div class="controls" role="search">
+    <label class="sr" for="q">Search places</label>
+    <input id="q" type="search" placeholder="Search pizza, BBQ, sushi, vegan" autocomplete="off">
+    <div class="seg" role="group" aria-label="Price">
+      <button type="button" data-price="0" aria-pressed="true">Any price</button>
+      <button type="button" data-price="1" aria-pressed="false">$</button>
+      <button type="button" data-price="2" aria-pressed="false">$$</button>
+      <button type="button" data-price="3" aria-pressed="false">$$$</button>
+    </div>
+    <button type="button" id="savedOnly" class="chip" aria-pressed="false">Saved only</button>
+    <button type="button" id="surprise" class="surprise">Surprise me</button>
+  </div>
+
+  <div class="layout">
+    <aside class="mapcol" aria-label="Map of where each place is">
+      <div class="mapbox"><svg id="map" viewBox="0 0 400 340" role="img" aria-label="Schematic map of Champaign and Urbana with numbered pins"></svg></div>
+      <p class="mapnote">Schematic of areas, not exact addresses. Use the Maps link on each place for directions.</p>
+    </aside>
+    <section class="listcol" id="panel" role="tabpanel" aria-live="polite"></section>
+  </div>
+
+  <footer>
+    Picks are compiled from local roundups by
+    <a href="https://www.chambanamoms.com/2025/08/17/campustown-university-of-illinois-places-to-eat/" target="_blank" rel="noopener">Chambana Moms</a>,
+    <a href="https://www.smilepolitely.com/food-drink/five-cheap-lunches-in-champaign-urbana-for-under-10/" target="_blank" rel="noopener">Smile Politely</a> and the
+    <a href="https://dailyillini.com/buzz-stories/food-and-restaurants/food-columns/2025/05/16/eat-like-a-local-campustown" target="_blank" rel="noopener">Daily Illini</a>.
+    Prices are rough and some come from older reviews, so check hours and menus before you go. Rankings are a judgment call, not a survey.
+    <p class="made">Made with ChatGPT</p>
+  </footer>
+</div>
+
+<script>
+var TABS = {
+  taste: {
+    title: "Best tasting",
+    blurb: "Places where the food is the reason to go. Expect to spend a bit more than a quick bite.",
+    items: [
+      { n: "Sakanaya", area: "Champaign", price: "$$$", tags: ["Ramen", "Sushi"], d: "The splurge pick. Ramen and sushi that people save for birthdays and parents' weekend.", o: "Ramen or a sushi roll set" },
+      { n: "Bangkok Thai", area: "Campustown", price: "$$", tags: ["Thai"], d: "Authentic Thai with portions big enough for leftovers.", o: "Any curry or noodle dish" },
+      { n: "Shawarma Joint", area: "Campustown", price: "$$", tags: ["Middle Eastern"], d: "Opened on campus in 2021 and became a regular stop almost immediately.", o: "Chicken shawarma plate" },
+      { n: "Black Dog Smoke & Ale House", area: "Urbana", price: "$$", tags: ["BBQ"], d: "Slow-smoked meats and a menu that rewards a group order.", o: "Smoked brisket or ribs" },
+      { n: "Maize", area: "West Campustown", price: "$$", tags: ["Mexican"], d: "Fresh, well-seasoned Mexican food on the west edge of Green Street.", o: "Tacos or a burrito bowl" },
+      { n: "Cracked on Green", area: "Campustown", price: "$$", tags: ["Breakfast"], d: "One of the few real breakfast spots near campus. The truffle tots get most of the attention.", o: "Egg burrito with parmesan truffle tots" }
+    ]
+  },
+  value: {
+    title: "Most value",
+    blurb: "The most food for the least money. Price notes come from recent reviews and may have crept up.",
+    items: [
+      { n: "Papa Del's", area: "Champaign", price: "$3–4 a slice", tags: ["Pizza", "Lunch"], d: "Thick Chicago-style slices at lunch for about the price of a coffee. One slice fills you up.", o: "Deep dish slice at lunch" },
+      { n: "Kaja Sushi", area: "Urbana", price: "$", tags: ["Sushi"], d: "The go-to for cheap sushi in town, often described as dollar sushi.", o: "Rolls from the discounted menu" },
+      { n: "La Mixteca", area: "Urbana", price: "~$8 lunch", tags: ["Mexican"], d: "Lunch comes with two tacos, rice, beans, and chips and salsa.", o: "Taco lunch special" },
+      { n: "Lil Porgy's", area: "Champaign", price: "~$7.50", tags: ["BBQ"], d: "Barbecue sandwiches at a price that is hard to find for real smoked meat.", o: "Pulled pork or brisket sandwich" },
+      { n: "Manolo's Pizza & Empanadas", area: "Urbana", price: "$", tags: ["Pizza", "Empanadas"], d: "Big slices and a wide empanada case. Cheap, filling and open late.", o: "Slice plus an empanada" },
+      { n: "Cactus Grill", area: "Champaign", price: "~$9", tags: ["Burritos"], d: "Large burritos with weekday and weekend specials worth planning around.", o: "Honey chicken burrito on a special day" }
+    ]
+  },
+  local: {
+    title: "Local favorites",
+    blurb: "The places C-U residents and longtime students name first when someone asks where to eat.",
+    items: [
+      { n: "Papa Del's", area: "Champaign", price: "$$", tags: ["Pizza", "Deep dish"], d: "The default answer for Chicago-style pizza in Champaign, and a tradition for alumni weekends.", o: "Deep dish pie to share" },
+      { n: "Black Dog Smoke & Ale House", area: "Urbana", price: "$$", tags: ["BBQ"], d: "A local standard for barbecue, and often named as one of the best deals in town.", o: "Rib or brisket plate" },
+      { n: "Manolo's Pizza & Empanadas", area: "Urbana", price: "$", tags: ["Pizza"], d: "A hole-in-the-wall that locals protect. The unusual pies change the idea of what a slice can be.", o: "Whatever specialty slice is out" },
+      { n: "Lil Porgy's", area: "Champaign", price: "$", tags: ["BBQ"], d: "A neighborhood barbecue spot with a loyal following and a short menu done well.", o: "Brisket sandwich" },
+      { n: "Wood N' Hog", area: "Urbana", price: "$$", tags: ["BBQ", "Daily specials"], d: "Known for its rotating daily specials, including jerk chicken wings on Saturdays.", o: "The daily special" },
+      { n: "The Dancing Dog", area: "Downtown Urbana", price: "$$", tags: ["Vegan"], d: "A downtown Urbana standby for vegan entrees and desserts, worth the short bus or bike ride.", o: "A vegan entree and dessert" }
+    ]
+  }
+};
+
+/* What to get, per restaurant. Each entry is [dish, why]. Menus change, so ask what's good that day. */
+var GETS = {
+  "Sakanaya": [["Ramen", "The reason most people go. Order it in cold weather."], ["A sushi roll set", "Split a few rolls with a friend to try more."], ["Go with a group", "It is the priciest stop on these lists, so save it for a special night."]],
+  "Bangkok Thai": [["A curry", "Comes with rice and enough for a second meal."], ["A noodle dish", "Pad thai style plates travel well as leftovers."], ["Ask for your spice level", "Be clear about heat when you order."]],
+  "Shawarma Joint": [["Chicken shawarma plate", "The safest first order."], ["A wrap", "Easier to eat between classes."], ["Add the sides", "Hummus or fries make it a full meal."]],
+  "Black Dog Smoke & Ale House": [["Smoked brisket", "A good test of any barbecue place."], ["Ribs", "Better when you share a platter."], ["A smoked sandwich", "Cheaper way to try the meat."]],
+  "Maize": [["Tacos", "Order two or three and mix fillings."], ["A burrito bowl", "Bigger meal for the price."], ["Chips and salsa to start", "Good for splitting at the table."]],
+  "Cracked on Green": [["Egg burrito", "The breakfast most people recommend."], ["Parmesan truffle tots", "Order a side even if you don't need one."], ["Go before 10", "Mornings are quieter than weekend brunch."]],
+  "Papa Del's": [["Deep dish slice at lunch", "Cheap and filling, so you can skip the whole pie."], ["A whole deep dish for the group", "Plan on 35 to 45 minutes of baking time."], ["Call ahead", "Saves a long wait on game days and weekends."]],
+  "Kaja Sushi": [["The cheapest rolls", "That is the point of going here."], ["A few different rolls", "Cheap enough to try several."], ["Go with friends", "Sharing lets you order more variety."]],
+  "La Mixteca": [["Taco lunch special", "Two tacos with rice, beans, chips and salsa."], ["Go at lunch", "The lunch special is the best deal on the menu."], ["Chips and salsa", "Free, so fill up on them first."]],
+  "Lil Porgy's": [["Brisket sandwich", "The pick if you want one thing."], ["Pulled pork sandwich", "Cheaper and just as messy."], ["Grab napkins", "You will need them."]],
+  "Manolo's Pizza & Empanadas": [["A specialty slice", "The unusual pies are the reason to visit."], ["An empanada", "Selection changes, so ask what is out."], ["Slice plus empanada", "A full meal for little money."]],
+  "Cactus Grill": [["Honey chicken burrito", "The one reviewers mention, especially on special days."], ["Check the weekly specials", "Some days are cheaper than others."], ["Split with a friend", "The burritos are large."]],
+  "Wood N' Hog": [["Whatever the daily special is", "That is how locals order here."], ["Jerk chicken wings", "A Saturday special in one recent review."], ["Ask when you walk in", "Specials rotate."]],
+  "The Dancing Dog": [["A vegan entree", "The reason people make the trip downtown."], ["A vegan dessert", "Save room."], ["Take the bus", "Parking downtown is harder than on campus."]]
+};
+
+/* Map zones on a 400 x 340 canvas. Green St runs across y = 170. Band zones line pins up along the street. */
+var ZONES = {
+  "Campustown":       { x: 250, y: 170, band: true },
+  "West Campustown":  { x: 118, y: 170, band: true },
+  "Champaign":        { x: 200, y: 262 },
+  "Urbana":           { x: 322, y: 78 },
+  "Downtown Urbana":  { x: 96,  y: 78 }
+};
+
+var panel = document.getElementById("panel");
+var map = document.getElementById("map");
+var buttons = document.querySelectorAll("nav button");
+var NS = "http://www.w3.org/2000/svg";
+
+function esc(s) { var d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+function pad(n) { return n < 10 ? "0" + n : String(n); }
+
+var state = { q: "", price: 0, savedOnly: false }, current = "taste", saved = loadSaved();
+function loadSaved() { try { return JSON.parse(localStorage.getItem("ce-saved")) || []; } catch (e) { return []; } }
+function persist() { try { localStorage.setItem("ce-saved", JSON.stringify(saved)); } catch (e) {} }
+function tier(p) { return p.indexOf("$$$") > -1 ? 3 : p.indexOf("$$") > -1 ? 2 : 1; }
+function visible(items) {
+  var q = state.q.trim().toLowerCase(), out = [];
+  items.forEach(function (it, idx) {
+    var hay = (it.n + " " + it.area + " " + it.tags.join(" ") + " " + it.d).toLowerCase();
+    if (q && hay.indexOf(q) < 0) return;
+    if (state.price && tier(it.price) !== state.price) return;
+    if (state.savedOnly && saved.indexOf(it.n) < 0) return;
+    out.push({ it: it, idx: idx });
+  });
+  return out;
+}
+function saveBtn(it) {
+  var on = saved.indexOf(it.n) > -1;
+  return '<button type="button" class="save" data-name="' + esc(it.n) + '" aria-pressed="' + on + '">' +
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>' +
+    '<span>' + (on ? "Saved" : "Save") + '</span></button>';
+}
+function mapsUrl(it) {
+  var city = it.area.indexOf("Urbana") > -1 ? "Urbana IL" : "Champaign IL";
+  return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(it.n + " " + city);
+}
+
+function baseMap() {
+  var s = "";
+  for (var x = 40; x < 400; x += 40) s += '<line class="street" x1="' + x + '" y1="0" x2="' + x + '" y2="340"/>';
+  for (var y = 30; y < 340; y += 40) if (Math.abs(y - 170) > 25) s += '<line class="street" x1="0" y1="' + y + '" x2="400" y2="' + y + '"/>';
+  s += '<rect class="campus" x="170" y="96" width="150" height="54"/>';
+  s += '<text class="zone" x="245" y="124" text-anchor="middle">Campus</text>';
+  s += '<line class="green" x1="0" y1="170" x2="400" y2="170"/>';
+  s += '<text class="zone" x="8" y="190">Green St</text>';
+  s += '<text class="zone" x="392" y="18" text-anchor="end">Urbana · north</text>';
+  s += '<text class="zone" x="392" y="332" text-anchor="end">Champaign · south</text>';
+  s += '<text class="zone" x="8" y="18">N ↑</text>';
+  return s;
+}
+
+function renderMap(entries) {
+  var counts = {}, seen = {}, out = baseMap();
+  entries.forEach(function (en) { counts[en.it.area] = (counts[en.it.area] || 0) + 1; });
+  entries.forEach(function (en) {
+    var it = en.it, i = en.idx;
+    var z = ZONES[it.area] || ZONES["Champaign"], k = seen[it.area] || 0, n = counts[it.area], dx, dy;
+    seen[it.area] = k + 1;
+    if (z.band) { dx = (k - (n - 1) / 2) * 30; dy = 0; }
+    else { dx = ((k % 3) - 1) * 34; dy = Math.floor(k / 3) * 30 - (n > 3 ? 14 : 0); }
+    out += '<g class="pin" id="pin-' + i + '" data-i="' + i + '" tabindex="0" role="button" aria-label="' + (i + 1) + ', ' + esc(it.n) + ', ' + esc(it.area) + '" transform="translate(' + (z.x + dx) + ' ' + (z.y + dy) + ')"><circle r="11"/><text>' + (i + 1) + '</text></g>';
+  });
+  map.innerHTML = out;
+}
+
+function activate(i, scroll) {
+  document.querySelectorAll(".row.on, .pin.on").forEach(function (e) { e.classList.remove("on"); });
+  if (i === null) return;
+  var row = document.getElementById("row-" + i), pin = document.getElementById("pin-" + i);
+  if (row) { row.classList.add("on"); if (scroll) row.scrollIntoView({ block: "center", behavior: "smooth" }); }
+  if (pin) pin.classList.add("on");
+}
+
+function render(key) {
+  var t = TABS[key];
+  if (!t) { key = "taste"; t = TABS.taste; }
+  panel.setAttribute("aria-labelledby", "tab-" + key);
+  current = key;
+  var vis = visible(t.items);
+  var html = '<div class="intro"><h2>' + esc(t.title) + '</h2><p>' + esc(t.blurb) + '</p><p class="count">Showing ' + vis.length + ' of ' + t.items.length + '</p></div><ol>';
+  vis.forEach(function (en) {
+    var it = en.it, i = en.idx;
+    html += '<li class="row" id="row-' + i + '" data-i="' + i + '"><div class="rank" aria-hidden="true">' + pad(i + 1) + '</div><div>' +
+      '<h3 class="name">' + esc(it.n) + '</h3>' +
+      '<p class="facts"><span class="price">' + esc(it.price) + '</span> · ' + esc(it.area) + ' · ' + it.tags.map(esc).join(", ") + '</p>' +
+      '<p class="desc">' + esc(it.d) + '</p>' +
+      '<div class="tools"><a class="maps" href="' + mapsUrl(it) + '" target="_blank" rel="noopener">Open in Maps</a>' + saveBtn(it) +
+      '<details class="get"><summary>What to get</summary><ul>' +
+      (GETS[it.n] || [[it.o, ""]]).map(function (g) {
+        return '<li><strong>' + esc(g[0]) + '</strong>' + (g[1] ? '<span>' + esc(g[1]) + '</span>' : '') + '</li>';
+      }).join("") + '</ul></details></div></div></li>';
+  });
+  html += '</ol>';
+  if (!vis.length) html += '<p class="empty">No matches. Try another search or <button type="button" id="clear">clear filters</button>.</p>';
+  panel.innerHTML = html;
+  renderMap(vis);
+  buttons.forEach(function (b) { b.setAttribute("aria-selected", String(b.dataset.tab === key)); });
+}
+
+buttons.forEach(function (b) {
+  b.addEventListener("click", function () {
+    render(b.dataset.tab);
+    try { history.replaceState(null, "", "#" + b.dataset.tab); } catch (e) {}
+  });
+});
+
+panel.addEventListener("mouseover", function (e) { var r = e.target.closest(".row"); if (r) activate(+r.dataset.i, false); });
+panel.addEventListener("mouseleave", function () { activate(null); });
+map.addEventListener("mouseover", function (e) { var p = e.target.closest(".pin"); if (p) activate(+p.dataset.i, false); });
+map.addEventListener("mouseleave", function () { activate(null); });
+map.addEventListener("click", function (e) { var p = e.target.closest(".pin"); if (p) activate(+p.dataset.i, true); });
+map.addEventListener("keydown", function (e) {
+  var p = e.target.closest(".pin");
+  if (p && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); activate(+p.dataset.i, true); }
+});
+map.addEventListener("focusin", function (e) { var p = e.target.closest(".pin"); if (p) activate(+p.dataset.i, false); });
+
+function syncControls() {
+  document.getElementById("q").value = state.q;
+  document.querySelectorAll(".seg button").forEach(function (b) { b.setAttribute("aria-pressed", String(+b.dataset.price === state.price)); });
+  document.getElementById("savedOnly").setAttribute("aria-pressed", String(state.savedOnly));
+}
+
+document.getElementById("q").addEventListener("input", function (e) { state.q = e.target.value; render(current); });
+document.querySelectorAll(".seg button").forEach(function (b) {
+  b.addEventListener("click", function () { state.price = +b.dataset.price; syncControls(); render(current); });
+});
+document.getElementById("savedOnly").addEventListener("click", function () { state.savedOnly = !state.savedOnly; syncControls(); render(current); });
+document.getElementById("surprise").addEventListener("click", function () {
+  var vis = visible(TABS[current].items);
+  if (!vis.length) return;
+  var pick = vis[Math.floor(Math.random() * vis.length)];
+  activate(pick.idx, true);
+  var d = document.querySelector("#row-" + pick.idx + " details");
+  if (d) d.open = true;
+});
+panel.addEventListener("click", function (e) {
+  if (e.target.closest("#clear")) { state = { q: "", price: 0, savedOnly: false }; syncControls(); render(current); return; }
+  var b = e.target.closest(".save");
+  if (!b) return;
+  var name = b.dataset.name, at = saved.indexOf(name);
+  if (at > -1) saved.splice(at, 1); else saved.push(name);
+  persist();
+  if (state.savedOnly) { render(current); return; }
+  var on = at === -1;
+  b.setAttribute("aria-pressed", String(on));
+  b.querySelector("span").textContent = on ? "Saved" : "Save";
+});
+
+render((location.hash || "").slice(1));
+</script>
+</body>
+</html>
